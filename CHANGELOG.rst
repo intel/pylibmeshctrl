@@ -2,6 +2,12 @@
 Changelog
 =========
 
+version 1.3.2
+=============
+
+Improvments:
+	* Fix race condition that could occur when running `run_command` or `run_console_command`
+
 version 1.3.1
 =============
 
