@@ -1570,6 +1570,11 @@ class Session(object):
                 result = reply_result
                 console_task.cancel()
                 tasks.append(reply_task)
+            else:
+                if not ignore_output:
+                    console_task.cancel()
+                    reply_task.cancel()
+                raise exceptions.ServerError(f"Unrecognized response: {data}")
 
         tasks = []
         async with asyncio.TaskGroup() as tg:
@@ -1647,6 +1652,9 @@ class Session(object):
                     tasks.append(console_task)
                 else:
                     console_task.cancel()
+            else:
+                console_task.cancel()
+                raise exceptions.ServerError(f"Unrecognized response: {data}")
 
         tasks = []
         async with asyncio.TaskGroup() as tg:
