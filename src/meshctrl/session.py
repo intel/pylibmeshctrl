@@ -1501,7 +1501,7 @@ class Session(object):
                 if (f"node//{nid}" == id):
                     return nid
 
-        result = None
+        result = {n: {"complete": False, "result": [], "command": command} for n in nodeids}
         console_result = {n: {"complete": False, "result": [], "command": command} for n in nodeids}
         reply_result = {n: {"complete": False, "result": [], "command": command} for n in nodeids}
         async def _console():
@@ -1536,49 +1536,52 @@ class Session(object):
         async def __(command, tg, tasks):
             nonlocal result
             responseid = self._generate_response_id("run_command")
+            
             if not ignore_output:
                 reply_task = tg.create_task(asyncio.wait_for(_reply(responseid), timeout=timeout))
-                console_task = tg.create_task(asyncio.wait_for(_console(), timeout=timeout))
+            # We still need to parse the console results because it sends them without namespace, this will likely break older versions of meshcentral
+            console_task = tg.create_task(asyncio.wait_for(_console(), timeout=timeout))
             data = await self._send_command(command, "run_command", timeout=timeout, responseid=responseid)
 
             if data.get("type", None) != "runcommands" and data.get("result", "ok").lower() != "ok":
                 raise exceptions.ServerError(data["result"])
             elif data.get("type", None) != "runcommands" and data.get("result", "ok").lower() == "ok":
-                reply_task.cancel()
-                result = console_result
                 expect_response = False
                 if not ignore_output:
-                    userid = (await self.user_info())["_id"]
-                    for n in nodeids:
-                        device_info = await self.device_info(n, timeout=timeout)
-                        try:
-                            permissions = device_info.mesh.links.get(userid, {}).get("rights",constants.DeviceRights.norights)\
-                            # This should work for device rights, but it only seems to work for mesh rights. Not sure why, but I can't get the events to show up when the user only has individual device rights
-                            # |device_info.get("links", {}).get(userid, {}).get("rights", constants.DeviceRights.norights)
-                            # If we don't have agentconsole rights, we won't be able te read the output, so fill in blanks on this node
-                            if not permissions&constants.DeviceRights.agentconsole:
-                                result[n]["complete"] = True
-                            else:
-                                expect_response = True
-                        except AttributeError:
+                    reply_task.cancel()
+                    result = console_result
+                userid = (await self.user_info())["_id"]
+                for n in nodeids:
+                    device_info = await self.device_info(n, timeout=timeout)
+                    try:
+                        permissions = device_info.mesh.links.get(userid, {}).get("rights",constants.DeviceRights.norights)
+                        # This should work for device rights, but it only seems to work for mesh rights. Not sure why, but I can't get the events to show up when the user only has individual device rights
+                        # |device_info.get("links", {}).get(userid, {}).get("rights", constants.DeviceRights.norights)
+                        # If we don't have agentconsole rights, we won't be able te read the output, so fill in blanks on this node
+                        if not permissions&constants.DeviceRights.agentconsole:
                             result[n]["complete"] = True
+                        else:
+                            expect_response = True
+                    except AttributeError:
+                        result[n]["complete"] = True
                 if expect_response:
                     tasks.append(console_task)
                 else:
                     console_task.cancel()
-            elif data.get("type", None) == "runcommands" and not ignore_output:
-                result = reply_result
+            elif data.get("type", None) == "runcommands":
                 console_task.cancel()
-                tasks.append(reply_task)
-            else:
                 if not ignore_output:
-                    console_task.cancel()
-                    reply_task.cancel()
+                    result = reply_result
+                    tasks.append(reply_task)
+            else:
+                # if not ignore_output:
+                console_task.cancel()
+                reply_task.cancel()
                 raise exceptions.ServerError(f"Unrecognized response: {data}")
 
         tasks = []
         async with asyncio.TaskGroup() as tg:
-            tasks.append(tg.create_task(__({ "action": 'runcommands', "nodeids": nodeids, "type": (2 if powershell else 0), "cmds": command, "runAsUser": runAsUser, "reply": not ignore_output}, tg, tasks)))
+            tasks.append(tg.create_task(__({ "action": 'runcommands', "nodeids": nodeids, "type": (2 if powershell else 0), "cmds": command, "runAsUser": runAsUser, "reply": True}, tg, tasks)))
 
         return {n: v | {"result": "".join(v["result"])} for n,v in result.items()}
 
