@@ -1,4 +1,4 @@
-FROM ghcr.io/ylianst/meshcentral:1.1.50
+FROM ghcr.io/ylianst/meshcentral:1.1.56
 RUN apk add curl
 RUN apk add python3
 WORKDIR /opt/meshcentral/

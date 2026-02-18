@@ -62,7 +62,7 @@ def remove_agent(agentid):
 
 @api.route('/', methods=['GET'])
 def slash():
-    return [_["id"] for _ in agents]
+    return [value["id"] for key, value in agents.items()]
 
 if __name__ == '__main__':
     api.run()

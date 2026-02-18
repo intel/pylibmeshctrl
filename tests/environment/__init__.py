@@ -4,7 +4,10 @@ import subprocess
 import time
 import json
 import atexit
-import pytest
+try:
+    import pytest
+except:
+    pass
 import requests
 thisdir = os.path.abspath(os.path.dirname(__file__))
 
@@ -68,6 +71,9 @@ class TestEnvironment(object):
         if not self._wait_for_meshcentral():
             self.__exit__(None, None, None)
             raise Exception("Failed to create docker instance")
+        if not self._wait_for_client_server():
+            self.__exit__(None, None, None)
+            raise Exception("Failed to create client server")
         return self
 
     def _wait_for_meshcentral(self, timeout=30):
@@ -75,6 +81,26 @@ class TestEnvironment(object):
         while time.time() - start < timeout:
             try:
                 data = subprocess.check_output(["docker", "inspect", "meshctrl-meshcentral", "--format='{{json .State.Health}}'"], cwd=thisdir, stderr=subprocess.DEVNULL)
+                # docker outputs for humans, not computers. This is the easiest way to chop off the ends
+                data = json.loads(data.strip()[1:-1])
+            except Exception as e:
+                time.sleep(1)
+                continue
+            try:
+                if data["Status"] == "healthy":
+                    break
+            except:
+                pass
+            time.sleep(1)
+        else:
+            return False
+        return True
+
+    def _wait_for_client_server(self, timeout=30):
+        start = time.time()
+        while time.time() - start < timeout:
+            try:
+                data = subprocess.check_output(["docker", "inspect", "meshctrl-client", "--format='{{json .State.Health}}'"], cwd=thisdir, stderr=subprocess.DEVNULL)
                 # docker outputs for humans, not computers. This is the easiest way to chop off the ends
                 data = json.loads(data.strip()[1:-1])
             except Exception as e:
@@ -112,10 +138,13 @@ def _kill_docker_process():
 
 atexit.register(_kill_docker_process)
 
-@pytest.fixture(scope="session")
-def env():
-    with TestEnvironment() as e:
-        yield e
+try:
+    @pytest.fixture(scope="session")
+    def env():
+        with TestEnvironment() as e:
+            yield e
+except:
+    pass
 
 
 if __name__ == "__main__":

@@ -9,6 +9,8 @@ services:
     image: client
     build:
       dockerfile: client.dockerfile
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
     ports:
       - 5000:5000
     depends_on:
@@ -20,6 +22,10 @@ services:
     #   - ./meshcentral/mongodb_data:/data/db
     networks:
       - meshctrl
+    healthcheck:
+      test: curl --fail http://localhost:5000/ || exit 1
+      interval: 5s
+      timeout: 120s
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -28,6 +34,8 @@ services:
     container_name: meshctrl-meshcentral
     # use the official meshcentral container
     image: meshcentral
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
     build:
       dockerfile: meshcentral.dockerfile
     ports:
@@ -55,6 +63,8 @@ services:
     image: ubuntu/squid:latest
     restart: unless-stopped
     container_name: meshctrl-squid
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
     ports:
       - 3128:3128
 
