@@ -251,6 +251,12 @@ async def test_mesh_device(env):
             assert "Run commands completed." not in r[agent2.nodeid]["result"], "Didn't parse run command ending correctly"
             assert "meshagent" in (await privileged_session.run_command(agent.nodeid, "ls", timeout=10))[agent.nodeid]["result"], "ls gave incorrect data"
 
+            # Test run_commands ignore output
+            r = await admin_session.run_command([agent.nodeid, agent2.nodeid], "ls", ignore_output=True, timeout=10)
+            print("\ninfo run_command ignore_output: {}\n".format(r))
+            assert r[agent.nodeid]["result"] == '', "Ignore output returned an output"
+            assert r[agent2.nodeid]["result"] == '', "Ignore output returned an output"
+
             # Test run_commands missing device
             try:
                 await admin_session.run_command([agent.nodeid, "notanid"], "ls", timeout=10)
@@ -259,10 +265,17 @@ async def test_mesh_device(env):
             else:
                 raise Exception("Run command on a device that doesn't exist did not raise an exception")
 
+            # Test run_console_command
             r = await admin_session.run_console_command([agent.nodeid, agent2.nodeid], "info", timeout=10)
             print("\ninfo run_console_command: {}\n".format(r))
             assert agent.nodeid in r[agent.nodeid]["result"], "Run console command gave bad response"
             assert agent2.nodeid in r[agent2.nodeid]["result"], "Run console command gave bad response"
+
+            # Test run_console_command ignore output
+            r = await admin_session.run_console_command([agent.nodeid, agent2.nodeid], "info", timeout=10, ignore_output=True)
+            print("\ninfo run_console_command ignore_output: {}\n".format(r))
+            assert r[agent.nodeid]["result"] == '', "Ignore output returned an output"
+            assert r[agent2.nodeid]["result"] == '', "Ignore output returned an output"
 
             # Test run_commands missing device
             try:
