@@ -2,10 +2,19 @@
 Changelog
 =========
 
+version 1.3.3
+=============
+
+Improvements:
+	* Dependency bumps
+
+Bugs:
+	* Fix run_commands having an issue with ignore_output
+
 version 1.3.2
 =============
 
-Improvments:
+Improvements:
 	* Fix race condition that could occur when running `run_command` or `run_console_command`
 
 version 1.3.1
