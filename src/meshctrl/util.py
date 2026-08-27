@@ -153,7 +153,7 @@ def _check_socket(f):
             await asyncio.wait_for(self._socket_open.wait(), 10)
         finally:
             await _check_errs(self)
-            return await f(self, *args, **kwargs)
+        return await f(self, *args, **kwargs)
     return wrapper
 
 def _process_websocket_exception(exc):
