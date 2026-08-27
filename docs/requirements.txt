@@ -1,12 +1,11 @@
 # Requirements file for ReadTheDocs, check .readthedocs.yml.
 # To build the module reference correctly, make sure every external package
 # under `install_requires` in `setup.cfg` is also listed here!
-sphinx>=3.2.1
-sphinx-jinja2-compat>=0.1.1
-sphinx-toolbox>=2.16.0
+sphinx>=8.0.0, <9.0.0
+sphinx-jinja2-compat>=0.4.1
+sphinx-toolbox>=4.3.0
 # sphinx_rtd_theme
-cffi~=1.17.1
 pycparser~=2.22
 enum_tools
-cryptography~=46.0.5
+cryptography~=50.0.0
 websockets~=16.0.0

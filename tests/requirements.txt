@@ -1,6 +1,5 @@
 requests
 pytest-asyncio
-cffi==1.17.1
-pycparser==2.22
-cryptography~=46.0.5
+cryptography~=50.0.0
 websockets~=16.0.0
+python-socks[asyncio]~=2.8.1
