@@ -66,8 +66,8 @@ class TestEnvironment(object):
             self._subp = _docker_process
             return self
         # Destroy the env in case it wasn't killed correctly last time.
-        subprocess.check_call(["docker", "compose", "down"], stdout=subprocess.DEVNULL, cwd=thisdir)
-        self._subp = _docker_process = subprocess.Popen(["docker", "compose", "up", "--build", "--force-recreate", "--no-deps"], cwd=thisdir)
+        subprocess.check_call(["podman", "compose", "down"], stdout=subprocess.DEVNULL, cwd=thisdir)
+        self._subp = _docker_process = subprocess.Popen(["podman", "compose", "up", "--build", "--force-recreate", "--no-deps"], cwd=thisdir)
         if not self._wait_for_meshcentral():
             self.__exit__(None, None, None)
             raise Exception("Failed to create docker instance")
@@ -80,7 +80,7 @@ class TestEnvironment(object):
         start = time.time()
         while time.time() - start < timeout:
             try:
-                data = subprocess.check_output(["docker", "inspect", "meshctrl-meshcentral", "--format='{{json .State.Health}}'"], cwd=thisdir, stderr=subprocess.DEVNULL)
+                data = subprocess.check_output(["podman", "inspect", "meshctrl-meshcentral", "--format='{{json .State.Health}}'"], cwd=thisdir, stderr=subprocess.DEVNULL)
                 # docker outputs for humans, not computers. This is the easiest way to chop off the ends
                 data = json.loads(data.strip()[1:-1])
             except Exception as e:
@@ -100,7 +100,7 @@ class TestEnvironment(object):
         start = time.time()
         while time.time() - start < timeout:
             try:
-                data = subprocess.check_output(["docker", "inspect", "meshctrl-client", "--format='{{json .State.Health}}'"], cwd=thisdir, stderr=subprocess.DEVNULL)
+                data = subprocess.check_output(["podman", "inspect", "meshctrl-client", "--format='{{json .State.Health}}'"], cwd=thisdir, stderr=subprocess.DEVNULL)
                 # docker outputs for humans, not computers. This is the easiest way to chop off the ends
                 data = json.loads(data.strip()[1:-1])
             except Exception as e:
@@ -124,17 +124,17 @@ class TestEnvironment(object):
 
     # Restart our docker instances, to test reconnect code.
     def restart_mesh(self):
-        subprocess.check_call(["docker", "container", "restart", "meshctrl-meshcentral"], stdout=subprocess.DEVNULL, cwd=thisdir)
+        subprocess.check_call(["podman", "container", "restart", "meshctrl-meshcentral"], stdout=subprocess.DEVNULL, cwd=thisdir)
         assert self._wait_for_meshcentral(), "Failed to restart docker instance"
 
     def restart_proxy(self):
-        subprocess.check_call(["docker", "container", "restart", "meshctrl-squid"], stdout=subprocess.DEVNULL, cwd=thisdir)
+        subprocess.check_call(["podman", "container", "restart", "meshctrl-squid"], stdout=subprocess.DEVNULL, cwd=thisdir)
 
 
 def _kill_docker_process():
     if _docker_process is not None:
         _docker_process.kill()
-        subprocess.run(["docker", "compose", "down"], cwd=thisdir)
+        subprocess.run(["podman", "compose", "down"], cwd=thisdir)
 
 atexit.register(_kill_docker_process)
 
