@@ -35,6 +35,7 @@ class Session(object):
         proxy (str): "url:port" to use for proxy server
         token (str): Login token. This appears to be superfluous
         ignore_ssl (bool): Ignore SSL errors
+        allow_no_tls (bool): Allow connections to ws:// uris. By default, the library will not connect to non-tls connections.
         auto_reconnect (bool): In case of server failure, attempt to auto reconnect. All outstanding requests will be killed.
 
     Returns:
@@ -47,7 +48,7 @@ class Session(object):
         closed (asyncio.Event): Event that occurs when the session closes permanently
     '''
 
-    def __init__(self, url, user=None, domain=None, password=None, loginkey=None, proxy=None, token=None, ignore_ssl=False, auto_reconnect=False, user_agent_header=None):
+    def __init__(self, url, user=None, domain=None, password=None, loginkey=None, proxy=None, token=None, ignore_ssl=False, allow_no_tls=False, auto_reconnect=False, user_agent_header=None):
         default_user_agent_header = f"Python/{python_version()} websockets/{websockets.__version__} pylibmeshctrl/{__version__}" 
         parsed = urllib.parse.urlparse(url)
 
@@ -61,6 +62,9 @@ class Session(object):
             p = list(parsed)
             p[1] = f"{parsed.hostname}:{port}"
             url = urllib.parse.urlunparse(p)
+
+        if parsed.scheme == "ws" and not allow_no_tls:
+            raise Exception("Cannot connect to a non-tls connection without being explicitly allowed")
 
         if (not url.endswith('/')):
             url += '/'
