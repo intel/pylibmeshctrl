@@ -1541,6 +1541,7 @@ class Session(object):
             nonlocal result
             responseid = self._generate_response_id("run_command")
             
+            reply_task = None
             if not ignore_output:
                 reply_task = tg.create_task(asyncio.wait_for(_reply(responseid), timeout=timeout))
             # We still need to parse the console results because it sends them without namespace, this will likely break older versions of meshcentral
@@ -1580,7 +1581,8 @@ class Session(object):
             else:
                 # if not ignore_output:
                 console_task.cancel()
-                reply_task.cancel()
+                if reply_task is not None:
+                    reply_task.cancel()
                 raise exceptions.ServerError(f"Unrecognized response: {data}")
 
         tasks = []
