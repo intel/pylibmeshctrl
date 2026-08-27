@@ -1827,7 +1827,7 @@ class Session(object):
             asyncio.TimeoutError: Command timed out
         '''
         if start is None:
-             datetime.datetime.now()
+            start = datetime.datetime.now()
         if consent is None:
             if type == constants.SharingType.desktop:
                 consent = constants.ConsentFlags.desktopnotify
