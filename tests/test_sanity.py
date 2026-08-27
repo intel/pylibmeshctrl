@@ -44,3 +44,10 @@ async def test_urlparse():
             pass
     except* ValueError:
         pass
+
+    # This tests our check for explicit non-tls connection allowance
+    try:
+        async with meshctrl.Session("ws://localhost", user="unprivileged", password="Not a real password", ignore_ssl=True) as s:
+            pass
+    except* Exception:
+        pass
