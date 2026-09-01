@@ -185,31 +185,39 @@ class Session(object):
             message = await self._message_queue.get()
             await websocket.send(message)
 
+    def _process_message(self, message):
+        # Meshcentral does pong wrong and breaks our parsing, so fix it here. This is fixed now, but we want compatibility with old versions.
+        if message == '{action:"pong"}':
+            message = '{"action":"pong"}'
+
+        # Can't process non-json data, don't even try
+        try:
+            data = json.loads(message)
+        except SyntaxError:
+            raise ValueError("Malformed message from server")
+        action = data.get("action", None)
+        if action == "close":
+            if data.get("cause", None) == "noauth":
+                raise exceptions.ServerError("Invalid Auth")
+        if action == "userinfo":
+            self._user_info = data["userinfo"]
+            self.initialized.set()
+
+        if action == "serverinfo":
+            self._currentDomain = data["serverinfo"]["domain"]
+            self._server_info = data["serverinfo"]
+        id = data.get("responseid", data.get("tag", None))
+
+        return message, action, id, data
+
     async def _listen_data_task(self, websocket):
         async for message in websocket:
             await self._eventer.emit("raw", message)
-            # Meshcentral does pong wrong and breaks our parsing, so fix it here. This is fixed now, but we want compatibility with old versions.
-            if message == '{action:"pong"}':
-                message = '{"action":"pong"}'
-
-            # Can't process non-json data, don't even try
             try:
-                data = json.loads(message)
-            except SyntaxError:
+                message, action, id, data = self._process_message(message)
+            except ValueError:
                 continue
-            action = data.get("action", None)
             await self._eventer.emit("server_event", data)
-            if action == "close":
-                if data.get("cause", None) == "noauth":
-                    raise exceptions.ServerError("Invalid Auth")
-            if action == "userinfo":
-                self._user_info = data["userinfo"]
-                self.initialized.set()
-
-            if action == "serverinfo":
-                self._currentDomain = data["serverinfo"]["domain"]
-                self._server_info = data["serverinfo"]
-            id = data.get("responseid", data.get("tag", None))
             if id:
                 await self._eventer.emit(id, data)
             else:
