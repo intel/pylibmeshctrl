@@ -1,5 +1,6 @@
 requests
 pytest-asyncio
+atheris
 cryptography~=50.0.0
 websockets~=16.0.0
 python-socks[asyncio]~=2.8.1
