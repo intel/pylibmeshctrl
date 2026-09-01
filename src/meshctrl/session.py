@@ -193,7 +193,9 @@ class Session(object):
         # Can't process non-json data, don't even try
         try:
             data = json.loads(message)
-        except SyntaxError:
+        except json.JSONDecodeError, ValueError:
+            raise ValueError("Malformed message from server")
+        if not isinstance(data, dict):
             raise ValueError("Malformed message from server")
         action = data.get("action", None)
         if action == "close":
